@@ -1,0 +1,9 @@
+= SUPER CRITICAL HEADER
+
+Now I'll include an awesome file!
+
+[source,java]
+----
+include::src/main/java/org/springframework/cloud/sleuth/Span.java[]
+----
+
