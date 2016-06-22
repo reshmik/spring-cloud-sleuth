@@ -35,8 +35,9 @@ import org.springframework.cloud.sleuth.Sampler;
 import org.springframework.cloud.sleuth.Span;
 import org.springframework.cloud.sleuth.SpanExtractor;
 import org.springframework.cloud.sleuth.SpanInjector;
+import org.springframework.cloud.sleuth.SpanReporter;
 import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
-import org.springframework.cloud.sleuth.trace.TestSpanContextHolder;
+import org.springframework.cloud.sleuth.util.ArrayListSpanAccumulator;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -63,6 +64,7 @@ public class TraceFilterCustomExtractorTests {
 	@Autowired RestTemplate restTemplate;
 	@Autowired Config config;
 	@Autowired CustomRestController customRestController;
+	@Autowired ArrayListSpanAccumulator accumulator;
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -78,7 +80,9 @@ public class TraceFilterCustomExtractorTests {
 		ResponseEntity<Map> requestHeaders = this.restTemplate.exchange(requestEntity,
 				Map.class);
 
-		then(this.customRestController.span).hasTraceIdEqualTo(traceId);
+		then(this.accumulator.getSpans().stream().filter(
+				span -> span.getSpanId() == spanId).findFirst().get())
+				.hasTraceIdEqualTo(traceId);
 		then(requestHeaders.getBody())
 				.containsEntry("correlationid", Span.idToHex(traceId))
 				.containsEntry("myspanid", Span.idToHex(spanId))
@@ -128,6 +132,11 @@ public class TraceFilterCustomExtractorTests {
 		Sampler alwaysSampler() {
 			return new AlwaysSampler();
 		}
+
+		@Bean
+		SpanReporter spanReporter() {
+			return new ArrayListSpanAccumulator();
+		}
 	}
 
 	// tag::extractor[]
@@ -161,11 +170,9 @@ public class TraceFilterCustomExtractorTests {
 
 	@RestController
 	static class CustomRestController {
-		Span span;
 
 		@RequestMapping("/headers")
 		public Map<String, String> headers(@RequestHeader HttpHeaders headers) {
-			this.span = TestSpanContextHolder.getCurrentSpan();
 			Map<String, String> map = new HashMap<>();
 			for (String key : headers.keySet()) {
 				map.put(key, headers.getFirst(key));
