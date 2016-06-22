@@ -266,10 +266,11 @@ public class TraceFilter extends GenericFilterBean {
 				log.debug("Found a parent span " + parent + " in the request");
 			}
 			addRequestTagsForParentSpan(request, parent);
-			spanFromRequest = this.tracer.createSpan(name, parent);
-			if (log.isDebugEnabled()) {
-				log.debug("Started a new span " + spanFromRequest + " with parent " + parent);
-			}
+			spanFromRequest = parent;
+//			spanFromRequest = this.tracer.createSpan(name, parent);
+//			if (log.isDebugEnabled()) {
+//				log.debug("Started a new span " + spanFromRequest + " with parent " + parent);
+//			}
 			if (parent.isRemote()) {
 				parent.logEvent(Span.SERVER_RECV);
 			}
